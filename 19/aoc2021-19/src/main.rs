@@ -41,7 +41,6 @@ impl FromStr for Point {
 struct Scanner {
     id: usize,
     points: HashSet<Point>,
-    fingerprints: HashSet<i32>,
     fingerprints_map: HashMap<i32, (Point, Point)>,
 }
 
@@ -103,19 +102,19 @@ fn build_scanners(lines: &Vec<String>) -> Vec<Scanner> {
 
 fn build_scanner(point_strings: &Vec<String>, id: usize) -> Scanner {
     let points: HashSet<Point> = point_strings.iter().map(|s| Point::from_str(s).unwrap()).collect();
-    let fingerprints = build_fingerprints(&points);
-    let fingerprints_map = HashMap::new();
-    Scanner { points, id, fingerprints, fingerprints_map }
+    let fingerprints_map = build_fingerprints(&points);
+    Scanner { points, id, fingerprints_map }
 }
 
-fn build_fingerprints(points: &HashSet<Point>) -> HashSet<i32> {
-    let mut set = HashSet::<i32>::new();
+fn build_fingerprints(points: &HashSet<Point>) -> HashMap<i32, (Point, Point)> {
+    let mut hashmap = HashMap::<i32, (Point, Point)>::new();
     for p1 in points.iter() {
         for p2 in points.iter() {
-            set.insert(p1.squared_distance_to(p2));
+            if p1 as *const _ == p2 as *const _ { continue; }
+            hashmap.insert(p1.squared_distance_to(p2), (p1.clone(), p2.clone()));
         }   
     }
-    set
+    hashmap
 }
 
 fn determine_overlap(scanners: &Vec<Scanner>) {
@@ -124,9 +123,9 @@ fn determine_overlap(scanners: &Vec<Scanner>) {
             if scanner1 as *const _ == scanner2 as *const _ { continue; }
 
             let mut overlap = HashSet::<i32>::new();
-            for val in &scanner1.fingerprints {
-                if scanner2.fingerprints.contains(&val) {
-                    overlap.insert(*val);
+            for pair in &scanner1.fingerprints_map {
+                if scanner2.fingerprints_map.contains_key(&pair.0) {
+                    overlap.insert(*pair.0);
                 }
             }
 
